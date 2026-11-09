@@ -1,6 +1,6 @@
 # DynamoDB data model
 
-Single table: **`chuckleberry`**. No SQL anywhere in the app.
+Single table: **`bassinet`**. No SQL anywhere in the app.
 
 - Billing mode: `PAY_PER_REQUEST`
 - PITR: on
@@ -18,7 +18,7 @@ Single table: **`chuckleberry`**. No SQL anywhere in the app.
 ## 1. Table layout
 
 ```
-Table: chuckleberry
+Table: bassinet
   PK  (String)  partition key
   SK  (String)  sort key
 
@@ -295,7 +295,7 @@ data is ~8 RCUs. That's free. When it stops being free, flip to GSI3 (§3-B).
 
 ```ruby
 class Repository
-  TABLE = "chuckleberry"
+  TABLE = "bassinet"
 
   def put(item, condition: nil)
   def get(pk, sk, consistent: false)
@@ -330,7 +330,7 @@ services:
 `bin/ddb-create` creates the table + both GSIs against
 `AWS_ENDPOINT_URL=http://localhost:8000` with dummy creds. Test suite truncates
 by deleting/recreating the table per run (`-sharedDb` makes that cheap), or
-better, by using unique table names per test process — `chuckleberry-test-<pid>`.
+better, by using unique table names per test process — `bassinet-test-<pid>`.
 That's simpler and parallel-safe.
 
 AWS SDK config in `config/initializers/aws.rb`:

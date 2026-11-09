@@ -1,9 +1,9 @@
-# chuckleberry
+# bassinet
 
 A self-hosted, offline-first PWA baby tracker. Rails 8 + Hotwire on the front,
 DynamoDB on the back, sockets for live co-parenting.
 
-Named after the obvious inspiration, with a vowel changed and a smirk attached.
+Named for the thing the baby is in, since it tracks the thing the baby does in it.
 
 > **Status: spec only.** The root commit of this repo is the initial design
 > document. No application code exists yet.
@@ -16,6 +16,7 @@ Named after the obvious inspiration, with a vowel changed and a smirk attached.
 | [docs/data-model.md](docs/data-model.md) | DynamoDB access patterns and item layout |
 | [docs/sync-protocol.md](docs/sync-protocol.md) | Offline queue, cursor sync, conflict rules |
 | [docs/auth.md](docs/auth.md) | Google sign-in and the iOS standalone handoff |
+| [docs/setup-google-oauth.md](docs/setup-google-oauth.md) | Console-click steps for the Google Cloud project |
 | [docs/pwa-ios.md](docs/pwa-ios.md) | iOS PWA constraints we have to design around |
 
 ## Stack
@@ -23,7 +24,9 @@ Named after the obvious inspiration, with a vowel changed and a smirk attached.
 - **Rails 8.1** — Hotwire (Turbo 8 + Stimulus), importmaps, Propshaft
 - **DynamoDB** — single table, no ActiveRecord
 - **Redis** — Action Cable pub/sub only (Solid Cable needs SQL; we have none)
-- **Kamal 2** — deploy to a single small instance
+- **Cloudflare Tunnel + Docker** — self-hosted on a home box, no open ports
+
+Live at `https://bassinet.nordg.ren`.
 
 ## Never-again list
 
@@ -33,11 +36,23 @@ Named after the obvious inspiration, with a vowel changed and a smirk attached.
 
 ## Runner-up names
 
-If `chuckleberry` gets vetoed: `hootenanny`, `bassinet`, `babygoats`,
+If `bassinet` gets vetoed: `hootenanny`, `chuckleberry`, `babygoats`,
 `diaperindex`, `the-other-berry`.
 
 ## Getting started
 
 Nothing to run yet. Provisioning notes land here once the skeleton exists.
-See `docs/SPEC.md` §12 for what's required on the box (Ruby 3.4 via `mise`,
-Docker for DynamoDB Local, a JRE for DynamoDB Local's jar).
+
+Dev box needs Ruby 3.4 (via `mise`), Docker (DynamoDB Local + Redis), and a JRE
+for the DynamoDB Local jar. Production is a home box behind a Cloudflare Tunnel
+— see `docs/SPEC.md` §9.1.
+
+## Decisions log
+
+| Date | Decision |
+| --- | --- |
+| 2026-11-09 | Name: `bassinet` |
+| 2026-11-09 | Domain: `bassinet.nordg.ren` |
+| 2026-11-09 | Host: self-hosted home box, Cloudflare Tunnel |
+| 2026-11-09 | AWS: existing account, `us-east-1` |
+| 2026-11-09 | Google-only auth in v1; magic link deferred |

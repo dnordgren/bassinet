@@ -12,7 +12,7 @@ same code path.
 Writes go to IndexedDB first, always. Online or offline, the same path.
 
 ```
-DB: chuckleberry (IndexedDB v1)
+DB: bassinet (IndexedDB v1)
 
 outbox        { key: auto, op_id (uuidv7), method, path, body, target_id,
                 created_at, attempts, next_retry_at, state }   // state: pending|inflight|failed

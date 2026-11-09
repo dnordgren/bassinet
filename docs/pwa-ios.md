@@ -73,8 +73,8 @@ Run on a real iPhone before any release. Simulator UAs lie about standalone.
 
 ```json
 {
-  "name": "chuckleberry",
-  "short_name": "chuckleberry",
+  "name": "bassinet",
+  "short_name": "bassinet",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -91,7 +91,7 @@ Run on a real iPhone before any release. Simulator UAs lie about standalone.
 
 Plus iOS-specific head tags: `apple-mobile-web-app-capable`,
 `apple-mobile-web-app-status-bar-style: default`,
-`apple-mobile-web-app-title: chuckleberry`, and the
+`apple-mobile-web-app-title: bassinet`, and the
 `apple-touch-startup-image` set (one per device size, generated at build time
 from a template — `bin/gen-splash`).
 

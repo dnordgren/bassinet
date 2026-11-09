@@ -1,4 +1,4 @@
-# chuckleberry — Product & Technical Spec
+# bassinet — Product & Technical Spec
 
 - **Status:** Draft 1 (root commit)
 - **Author:** Doom, for Derek
@@ -157,7 +157,7 @@ We store `duration_s` when the timer stops.
                 │ AWS SDK v3 (single-table)            │ Redis pub/sub
 ┌───────────────▼──────────────────────┐   ┌───────────▼─────────────────────────────┐
 │            DynamoDB                  │   │  Redis (Action Cable adapter only)      │
-│  chuckleberry table + GSI1/GSI2      │   │  No jobs queue in v1 (see §9)           │
+│  bassinet table + GSI1/GSI2      │   │  No jobs queue in v1 (see §9)           │
 └──────────────────────────────────────┘   └─────────────────────────────────────────┘
 ```
 
@@ -203,7 +203,7 @@ in two places.)
 
 ## 5. Data model (summary)
 
-Full detail in `docs/data-model.md`. Single table `chuckleberry`.
+Full detail in `docs/data-model.md`. Single table `bassinet`.
 
 ```
 PK                         SK                          Entity
@@ -240,7 +240,7 @@ No client secret in the browser — the secret lives on the Rails box.
 
 ### 6.2 Session
 
-- Server sets `cb_session` — encrypted cookie, `HttpOnly`, `Secure`,
+- Server sets `bassinet_session` — encrypted cookie, `HttpOnly`, `Secure`,
   `SameSite=Lax`, 90 days, sliding refresh on use.
 - We do *not* use Google tokens after login. We call `userinfo` once, store
   `sub`, email, name, avatar URL. No refresh tokens, no Google API access.
@@ -270,8 +270,10 @@ Our answer is a **handoff code**:
 5. Safari shows "You're signed in — go back to the app." PWA's poll returns a
    one-time session token; PWA posts it to `/auth/session` and gets its own cookie.
 
-Fallback path (always available): **email magic link**, which works entirely
-without Google and avoids the whole class of problem.
+Fallback path: **none in v1.** Magic link is deliberately deferred (see §12.5 of
+`docs/SPEC.md`) so we don't take an email-provider dependency before the app
+exists. If the handoff turns out to be fragile in real use, adding it later is
+a small, self-contained change — `docs/auth.md` §3 keeps the design on file.
 
 This is the single most likely thing to break in real use. It gets its own
 integration test target and a manual device checklist.
@@ -339,18 +341,35 @@ build step beyond importmaps.
 
 ## 9. Infra & deploy
 
-- **Host:** one small Linux box (Hetzner CX22 or equivalent), Docker.
-- **Kamal 2** with a single `web` role. No separate job host: no queue in v1.
-- **TLS:** Kamal + Let's Encrypt via the proxy.
-- **DynamoDB:** real AWS, on-demand capacity in `us-east-1` (or `us-west-2`),
-  one table, PITR on, deletion protection on. No VPC needed.
-- **Redis:** single container, `maxmemory-policy noeviction`, AOF on. Only pub/sub.
-- **Backups:** DynamoDB PITR + weekly export to S3 (parquet, cheap).
-- **Secrets:** Kamal secrets from a local `.kamal/secrets` file; Google client
-  secret and AWS keys live there. Never in git.
+- **Host:** Derek's small home box, Docker. Reachable via **Cloudflare Tunnel**
+  (see §9.1) — no port forwarding, no dynamic DNS, TLS at the edge.
+- **App server:** Puma under Kamal 2, single `web` role. No job host: no queue.
+- **DynamoDB:** real AWS, on-demand capacity, one table, PITR on, deletion
+  protection on. Region `us-east-1`.
+- **Redis:** single container, `maxmemory-policy noeviction`, AOF on. pub/sub only.
+- **Backups:** DynamoDB PITR + weekly export to S3. The box itself holds only
+  code and secrets, so it's disposable — losing it costs a redeploy, not data.
+- **Secrets:** Kamal secrets file locally; Google client secret and AWS keys
+  live there. Never in git.
 
 Dev needs Ruby 3.4 (via `mise`), Docker (DynamoDB Local + Redis), and a JRE for
 the DynamoDB Local jar.
+
+### 9.1 Home hosting consequences
+
+Running at home changes the risk profile, so it changes the design:
+
+| Concern | Answer |
+| --- | --- |
+| Dynamic residential IP | Cloudflare Tunnel — outbound-only connection, no inbound ports |
+| Router exposure | None. The box never listens publicly. |
+| Box goes down / reboots | The PWA keeps logging offline and drains on reconnect. This is why offline is phase 5 and not phase 9. |
+| ISP outage | Same answer. Both phones queue locally. |
+| Disk dies | Data is in DynamoDB. Rebuild the box, redeploy, done. |
+| Power blip | UPS if Derek has one; otherwise Docker restart policies + a healthcheck. |
+
+The honest expectation: this will be unreachable sometimes, and that is fine,
+because the app was designed to not care.
 
 ---
 
@@ -378,7 +397,7 @@ the DynamoDB Local jar.
 - `rails new` with skips, Kamal init, DynamoDB local via docker-compose
 - Table creation script (`bin/ddb-create`) with GSI1/GSI2
 - Repository base class + `Child`/`Event` repos with tests against DDB Local
-- Google OAuth + handoff code + magic-link fallback
+- Google OAuth + iOS handoff code (no magic link — see §12.5)
 
 ### Phase 2 — core logging (1–2 sessions)
 - Home screen action grid, event create/edit/delete via Turbo Frames
@@ -409,27 +428,36 @@ Each phase ends with a demo-able build. No phase merges itself; PR per phase.
 
 ---
 
-## 12. Open questions for Derek
+## 12. Decisions (formerly open questions)
 
-1. **Google Cloud project** — do you have one, or should I write the setup steps
-   and you do the console clicks? (Need: OAuth client ID, `*.example.com` +
-   `localhost` redirect URIs, consent screen in "testing" with you and your wife
-   as test users.)
-2. **AWS account** — reuse an existing one? Region preference? We're at roughly
-   $0–2/mo with on-demand Dynamo for this volume.
-3. **Domain** — something like `chuckleberry.app`? Or run under an existing zone?
-4. **Host** — do you want this on an existing box or a new small VPS?
-5. **Magic link fallback** — worth building in phase 1, or is the Google handoff
-   enough? I lean toward building it; it's ~40 lines and it's the escape hatch
-   when iOS does something new and stupid.
-6. **Timezone** — store all timestamps as UTC epoch ms, render in the child's
-   timezone. Confirm that's right when you and your wife are in different
-   timezones for a trip.
+1. **Google Cloud project** — Derek has one; console-click steps are written out
+   in `docs/setup-google-oauth.md`.
+2. **AWS account** — existing account. Region `us-east-1` unless it argues.
+3. **Domain** — `bassinet.nordg.ren`.
+4. **Host** — self-hosted on a small home box. Consequence: home uplink is the
+   availability ceiling, so the offline-first design isn't a nicety, it's the
+   product. Also: no static IP needed — see §9.1 on Cloudflare Tunnel.
+5. **Magic link** — **skipped for v1.** No email provider dependency. Google only.
+   The design stays documented in `docs/auth.md` §3 as the escape hatch if iOS
+   changes something; adding it later is ~40 lines plus one API key.
+6. **Timezone** — store UTC epoch ms, render in the child's timezone. Confirmed.
+
+### 9.1 Self-hosting at home (added)
+
+Since the box is at home behind a residential connection:
+
+- Public entry via **Cloudflare Tunnel** (no port forwarding, no dynamic DNS, TLS
+  terminated at the edge, `cloudflared` runs next to Puma). Free tier is fine.
+- Consequence: the app is reachable even when the house IP changes, and we don't
+  expose ports on the home router — good for a box holding baby data.
+- Backups matter more than usual: a home disk dying is a realistic failure, not
+  a hypothetical. DynamoDB PITR covers the data; the box itself only holds
+  code and secrets, so it's disposable.
+- Uptime expectation: it will be down sometimes. The PWA keeps logging anyway.
 
 ---
 
 ## 13. Names considered
 
-`chuckleberry` (chosen — Huckleberry's cheekier cousin, and a real word for a
-plant nobody can identify). Runners-up: `hootenanny`, `bassinet`, `babygoats`,
-`diaperindex`, `the-other-berry`.
+`bassinet` (chosen — Derek's pick). Runners-up: `hootenanny`, `chuckleberry`,
+`babygoats`, `diaperindex`, `the-other-berry`.

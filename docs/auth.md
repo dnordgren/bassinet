@@ -77,7 +77,7 @@ back into the app.
 `GET /?handoff=A7K2QX` on Safari:
 
 - If already signed in → immediately mark claimed, show a big
-  "Signed in — return to the app" screen with a `chuckleberry://` attempt (no-op
+  "Signed in — return to the app" screen with a `bassinet://` attempt (no-op
   on iOS) and a plain "Done" button. Look for the app, don't insist.
 - If not signed in → a one-button page: "Continue with Google". No other UI.
   After OAuth, land on the same "return to the app" screen.
@@ -112,35 +112,31 @@ That is the path that just works, and it's what we tell users in the banner.
 
 ---
 
-## 3. Magic-link fallback
+## 3. Magic-link fallback — **deferred, not built in v1**
 
-Always available, regardless of platform. It exists because it is the escape
-hatch when Apple or Google changes something, and because it takes ~40 lines.
+Decision (2026-11-09): ship Google-only. No email provider dependency until the
+app exists and we know whether the handoff is actually fragile. This section is
+kept as the design so that adding it later doesn't require re-thinking it.
+
+When we do build it: it works regardless of platform, which is exactly why it's
+the right escape hatch.
 
 1. `POST /auth/magic` with email → look up or create user → single-use token
    (32 bytes, URL-safe), hash stored, 15-min TTL.
-2. Send via... **we have no mail server.** Two options:
-
-   - **Resend / Postmark API** (one HTTP call, ~$0/mo at this volume). Requires an
-     API key and a verified domain. Cleanest.
-   - **Skip delivery entirely in v1:** the link is *also* shown on screen when
-     `Rails.env.development?` or when the requesting browser's session is already
-     owner of the household (i.e. re-auth, not first login). For a spouse on a
-     new device, that doesn't help.
-
-   **Decision:** use Resend in v1 for magic links. One dependency, free tier,
-   trivially replaceable. If Derek vetoes an email provider, this degrades to
-   Google-handoff-only and §1's escape hatch is gone — flag it.
-
+2. Delivery needs a mail provider (Resend / Postmark, one HTTP call, free at this
+   volume, requires a verified domain). That dependency is the only reason this
+   isn't in v1.
 3. `GET /auth/magic/:token` → verify hash, unexpired, unconsumed → set session →
-   redirect `/`. Works in Safari *and* standalone (it's a plain navigation, no
-   Google UA check involved). This is why it's the safety net.
+   redirect `/`. Works in Safari *and* standalone — it's a plain navigation, so
+   Google's user-agent check never enters the picture.
+
+Estimated cost when we pick it up: ~40 lines plus one API key and a DNS record.
 
 ---
 
 ## 4. Sessions
 
-- Cookie: `cb_session`, Rails `cookies.encrypted` + `signed` (both), `HttpOnly`,
+- Cookie: `bassinet_session`, Rails `cookies.encrypted` + `signed` (both), `HttpOnly`,
   `Secure`, `SameSite=Lax`, `max_age 90 days`, sliding (re-issued when older than
   30 days on an authenticated request).
 - Contents: `{ uid:, hid: (active household), sess: (session uuid), iat: }`.
@@ -149,7 +145,7 @@ hatch when Apple or Google changes something, and because it takes ~40 lines.
   suppression and as a rate-limit key. Revocable per-device via a
   `USER#<uid> / SESSION#<sess>` item (logout-everywhere = delete all).
 - 401 from `/sync` → client shows re-auth modal, **keeps the outbox**.
-- Session fixation: OAuth and magic-link completion always rotate `sess`.
+- Session fixation: OAuth completion always rotates `sess`.
 
 ### CSRF
 
@@ -164,7 +160,7 @@ on `subscribed`.
 
 Steps for Derek, once:
 
-1. `console.cloud.google.com` → new project `chuckleberry`.
+1. `console.cloud.google.com` → new project `bassinet`.
 2. APIs & Services → OAuth consent screen → **External**, publishing status
    *Testing*. Add yourself and your wife as test users (max 100; testing consent
    screens expire refresh tokens after 7 days — irrelevant, we don't use them).
@@ -199,9 +195,9 @@ created_at, updated_at
 ```
 
 Keyed by Google `sub`, not email. Email changes are a display-field update, not a
-new identity. Magic-link login looks the user up by email — if the email matches
-an existing Google user, it's the same account (magic link is a *credential* for
-the account, not a separate identity space). Store `email` as a lookup item too:
+new identity. (This matters if magic link ever lands — it would authenticate
+into an existing Google-created account rather than forking a second one.) Store
+`email` as a lookup item too:
 
 ```
 PK = EMAIL#<lowercased email>
@@ -221,7 +217,7 @@ First login creates: user, email index, household, member(owner). One
 | --- | --- |
 | `auth/google_callback_spec` | token exchange stubbed; user+household created on first login; same sub reuses account |
 | `auth/handoff_spec` | code+poll pair required; single use; expiry; wrong cookie rejected; session minted matches uid |
-| `auth/magic_link_spec` | hash verified, single use, expiry, email→user mapping |
+| `auth/magic_link_spec` | *(deferred)* hash verified, single use, expiry, email→user mapping |
 | `auth/scoping_spec` | every controller action rejects a child from a foreign household |
 | manual device checklist | real iPhone: standalone install → handoff → logging works. Documented in `docs/pwa-ios.md` §4. |
 
