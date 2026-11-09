@@ -154,10 +154,10 @@ We store `duration_s` when the timer stops.
 │  SessionsController  │  EventsController  │  SyncController  │  Cable::Connection   │
 │  HouseholdChannel    │  Idempotency       │  Cursor paging   │  Presence (later)    │
 └───────────────┬──────────────────────────────────────┬─────────────────────────────┘
-                │ AWS SDK v3 (single-table)            │ Redis pub/sub
+                │ AWS SDK v3 (single-table)            │ Solid Cable (SQLite file)
 ┌───────────────▼──────────────────────┐   ┌───────────▼─────────────────────────────┐
-│            DynamoDB                  │   │  Redis (Action Cable adapter only)      │
-│  bassinet table + GSI1/GSI2      │   │  No jobs queue in v1 (see §9)           │
+│            DynamoDB                  │   │  SQLite under storage/ — Action Cable   │
+│  bassinet table + GSI1/GSI2          │   │  only. No Redis, no extra container.    │
 └──────────────────────────────────────┘   └─────────────────────────────────────────┘
 ```
 
@@ -169,21 +169,29 @@ household's children" — both are single-partition or single-GSI queries. There
 no join anywhere in the domain. Append-heavy writes with a monotonic sort key are
 Dynamo's happy path.
 
-The cost is: no ActiveRecord. Everything is hand-written repository classes over
-`Aws::DynamoDB::Client`. See `docs/data-model.md`.
+The cost is: **no AR models for domain data.** Everything is hand-written
+repository classes over `Aws::DynamoDB::Client`. See `docs/data-model.md`.
 
-### 4.2 The "no AR" consequence
+### 4.2 What "no ActiveRecord" actually means here
 
-Rails without ActiveRecord means:
+`rails new` **keeps** ActiveRecord, but only as plumbing. Domain data never
+touches it.
 
-- No Devise, no `has_many`, no migrations. We write `app/models/*.rb` as plain
-  POROs with a `Repository` per aggregate.
-- No `Solid Queue`/`Solid Cable`/`Solid Cache` — all three require a SQL store.
-  Action Cable gets the **Redis** adapter. Cache: in-process memory + HTTP
-  caching. Jobs: none in v1 (we do the one background task — invite expiry
-  cleanup — lazily on read).
-- `rails new` must be run with `--skip-active-record --skip-solid
-  --skip-active-storage --skip-action-mailbox --skip-action-text`.
+- **No AR models, no domain migrations.** `app/models/*.rb` are plain POROs
+  backed by hand-written repositories. Nothing in `app/models` inherits from
+  `ApplicationRecord`.
+- **ActiveRecord exists so Rails' own machinery works**: Solid Cable for Action
+  Cable (SQLite files under `storage/`), Solid Queue if v2 wants background jobs,
+  Solid Cache for fragment caching. All file-backed. No Redis container.
+- **No Devise** — it assumes AR-backed users. Auth is hand-rolled, and it's small
+  (`docs/auth.md`).
+
+The alternative — `--skip-active-record` — works, but then Action Cable needs
+Redis, which is a whole container to operate for a two-parent app. Not worth it.
+If ActiveRecord's presence ever confuses someone, this section is the answer.
+
+Why Solid Cable is fine at this scale: it stores broadcasts in a SQLite table
+and polls. For two clients on one box, polling cost is noise.
 
 ### 4.3 Request paths
 
@@ -346,14 +354,17 @@ build step beyond importmaps.
 - **App server:** Puma under Kamal 2, single `web` role. No job host: no queue.
 - **DynamoDB:** real AWS, on-demand capacity, one table, PITR on, deletion
   protection on. Region `us-east-1`.
-- **Redis:** single container, `maxmemory-policy noeviction`, AOF on. pub/sub only.
+- **SQLite:** four files under `storage/` — primary, cache, queue, cable. Written
+  by Rails, not by us. Persisted in the Docker volume. No Redis, no extra service.
 - **Backups:** DynamoDB PITR + weekly export to S3. The box itself holds only
   code and secrets, so it's disposable — losing it costs a redeploy, not data.
 - **Secrets:** Kamal secrets file locally; Google client secret and AWS keys
   live there. Never in git.
 
-Dev needs Ruby 3.4 (via `mise`), Docker (DynamoDB Local + Redis), and a JRE for
-the DynamoDB Local jar.
+Dev needs Ruby 3.4 (via `mise`), plus a JRE or Docker for DynamoDB Local. No Redis.
+
+`rails new` flags: `--skip-active-storage --skip-action-mailbox --skip-action-text`.
+**Do not** pass `--skip-active-record` — ActiveRecord stays for the Solid gems.
 
 ### 9.1 Home hosting consequences
 

@@ -1,6 +1,8 @@
 # DynamoDB data model
 
-Single table: **`bassinet`**. No SQL anywhere in the app.
+Single table: **`bassinet`**. Every domain record lives here — there is no
+relational store for baby data (ActiveRecord is present only as Rails plumbing
+for Solid Cable/Cache; see `docs/SPEC.md` §4.2).
 
 - Billing mode: `PAY_PER_REQUEST`
 - PITR: on

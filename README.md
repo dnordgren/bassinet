@@ -22,16 +22,20 @@ Named for the thing the baby is in, since it tracks the thing the baby does in i
 ## Stack
 
 - **Rails 8.1** — Hotwire (Turbo 8 + Stimulus), importmaps, Propshaft
-- **DynamoDB** — single table, no ActiveRecord
-- **Redis** — Action Cable pub/sub only (Solid Cable needs SQL; we have none)
+- **DynamoDB** — single table; domain data never touches ActiveRecord
+- **SQLite (Rails plumbing only)** — four files under `storage/` for Solid Cable,
+  Solid Cache and Solid Queue. Domain data lives in DynamoDB, not here. No Redis.
 - **Cloudflare Tunnel + Docker** — self-hosted on a home box, no open ports
 
 Live at `https://bassinet.nordg.ren`.
 
 ## Never-again list
 
-- No Postgres. No SQL. If it needs a relational store, it's in DynamoDB items.
-- No Devise (needs ActiveRecord). Auth is hand-rolled and small.
+- No Postgres, no relational store for domain data. Baby records live in DynamoDB
+  or they don't exist. (SQLite is present but is Rails plumbing only — see
+  `docs/SPEC.md` §4.2.)
+- No Devise. Auth is hand-rolled and small.
+- No Redis. Solid Cable over the SQLite file does the job.
 - No native wrapper. If it needs Xcode, it's out of scope.
 
 ## Runner-up names
@@ -43,8 +47,8 @@ If `bassinet` gets vetoed: `hootenanny`, `chuckleberry`, `babygoats`,
 
 Nothing to run yet. Provisioning notes land here once the skeleton exists.
 
-Dev box needs Ruby 3.4 (via `mise`), Docker (DynamoDB Local + Redis), and a JRE
-for the DynamoDB Local jar. Production is a home box behind a Cloudflare Tunnel
+Dev box needs Ruby 3.4 (via `mise`), plus a JRE or Docker for DynamoDB Local. No
+Redis, no Postgres. Production is a home box behind a Cloudflare Tunnel
 — see `docs/SPEC.md` §9.1.
 
 ## Decisions log
