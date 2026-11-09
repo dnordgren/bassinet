@@ -1,0 +1,32 @@
+# Rails
+/.bundle
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+/storage/*
+!/storage/.keep
+/public/assets
+/public/packs
+/public/packs-test
+config/master.key
+config/credentials/*.key
+
+# Node / JS
+/node_modules
+/app/assets/builds/*
+!/app/assets/builds/.keep
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Local DynamoDB
+/db/dynamodb-local/
+
+# Editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
