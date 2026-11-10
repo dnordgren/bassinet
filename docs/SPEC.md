@@ -402,13 +402,40 @@ because the app was designed to not care.
 
 ## 11. Roadmap
 
-### Phase 0 — spec (this commit)
+### Phase 0 — spec ✅
 
-### Phase 1 — skeleton (1 session)
-- `rails new` with skips, Kamal init, DynamoDB local via docker-compose
-- Table creation script (`bin/ddb-create`) with GSI1/GSI2
-- Repository base class + `Child`/`Event` repos with tests against DDB Local
-- Google OAuth + iOS handoff code (no magic link — see §12.5)
+### Phase 1 — skeleton ✅ (done 2026-11-09)
+
+Shipped:
+
+- `rails new` with `--skip-active-storage/--skip-action-mailbox/--skip-action-text`.
+  ActiveRecord kept as plumbing so Solid Cable uses SQLite files; no Redis.
+- DynamoDB Local as a plain jar under a mise-installed JRE (no Docker — there
+  is no Docker socket on the dev box).
+- `bin/ddb-download`, `bin/ddb-start`, `bin/ddb-create`, all idempotent.
+- `lib/bassinet/dynamo/`: explicit `Marshal` (own attribute conversion both
+  ways), `Keys` (15-digit padded epoch so sort order == time order), `Schema`
+  (one table, two GSIs), `Client` (scoped wrapper, `require_existing` on
+  updates), `Bootstrap`.
+- `Bassinet::Repo` plus `ChildRepo`, `EventRepo`, `UserRepo`, `HouseholdRepo`,
+  `SessionRepo`, `HandoffRepo`.
+- Google OAuth with PKCE, server-recorded sessions, and the iOS standalone
+  handoff.
+- 129 specs, all green, against a real DynamoDB Local instance.
+
+Not built (deliberately): Kamal deploy config, magic link, any UI beyond
+sign-in. Child creation and event logging are phase 2.
+
+Bugs found by actually running the thing:
+
+| Bug | Fix |
+| --- | --- |
+| SDK `simple_attributes` double-wrapped tagged values into `{"M"=>{"S"=>…}}` | Disabled the plugin; `Marshal` normalizes `AttributeValue` structs |
+| Update builder used `#v0` as an expression-*value* key | Values need `:` |
+| Child list sort key put the archive flag last, so ids decided ordering | Flag now leads the key |
+| `STATUS` is a DynamoDB reserved word | Alias it in conditions |
+| `update_item` invents a row when the key is missing | `require_existing:` |
+| Zeitwerk wanted `GoogleOauth` | `acronym "OAuth"` |
 
 ### Phase 2 — core logging (1–2 sessions)
 - Home screen action grid, event create/edit/delete via Turbo Frames

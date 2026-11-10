@@ -45,11 +45,22 @@ If `bassinet` gets vetoed: `hootenanny`, `chuckleberry`, `babygoats`,
 
 ## Getting started
 
-Nothing to run yet. Provisioning notes land here once the skeleton exists.
+```bash
+mise install          # Ruby 4.0.9 + Java 25 (DynamoDB Local)
+gem install rails     # if you don't have rails on PATH
+bin/ddb-download      # fetch DynamoDB Local (jar, ~49MB, gitignored)
+bin/ddb-start         # leave running in its own terminal
+bin/ddb-create        # create the table + 2 GSIs
+bin/rails server      # http://localhost:3000
+bundle exec rspec     # 129 examples, boots its own DB on a random port
+```
 
-Dev box needs Ruby 3.4 (via `mise`), plus a JRE or Docker for DynamoDB Local. No
-Redis, no Postgres. Production is a home box behind a Cloudflare Tunnel
-— see `docs/SPEC.md` §9.1.
+Sign-in needs a Google OAuth client — see `docs/setup-google-oauth.md`. Without
+it the app boots, renders, and tells you it's unconfigured rather than failing
+at the button.
+
+No Redis, no Postgres. Production is a home box behind a Cloudflare Tunnel —
+see `docs/SPEC.md` §9.1.
 
 ## Decisions log
 
@@ -60,3 +71,4 @@ Redis, no Postgres. Production is a home box behind a Cloudflare Tunnel
 | 2026-11-09 | Host: self-hosted home box, Cloudflare Tunnel |
 | 2026-11-09 | AWS: existing account, `us-east-1` |
 | 2026-11-09 | Google-only auth in v1; magic link deferred |
+| 2026-11-09 | Phase 1 done: data layer + auth, 129 specs |
