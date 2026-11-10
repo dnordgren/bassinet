@@ -24,9 +24,15 @@ config/credentials/*.key
 
 # Local DynamoDB
 /db/dynamodb-local/
+/db/dynamodb-local-test-*/
 
 # Editors
 .DS_Store
 .idea/
 .vscode/
 *.swp
+
+# DynamoDB Local (downloaded by bin/ddb-download)
+/vendor/dynamodb-local/
+/db/dynamodb-local/
+/db/dynamodb-local-test-*/

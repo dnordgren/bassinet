@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Run DynamoDB Local in the foreground.
+#
+#   bin/ddb-start              # port 8000, data in db/dynamodb-local
+#   BASSINET_DDB_PORT=9000 bin/ddb-start
+#
+# Tests boot their own instance on a random port; this is for development.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+if [[ ! -f vendor/dynamodb-local/DynamoDBLocal.jar ]]; then
+  echo "DynamoDB Local not installed. Run bin/ddb-download first." >&2
+  exit 1
+fi
+
+if ! command -v java >/dev/null 2>&1; then
+  echo "java not found. Install it with: mise use java" >&2
+  exit 1
+fi
+
+port="${BASSINET_DDB_PORT:-8000}"
+db_path="${BASSINET_DDB_PATH:-$PWD/db/dynamodb-local}"
+mkdir -p "$db_path"
+
+echo "DynamoDB Local on http://127.0.0.1:${port} (data: ${db_path})"
+cd vendor/dynamodb-local
+exec java -Djava.library.path=./DynamoDBLocal_lib \
+  -jar DynamoDBLocal.jar \
+  -sharedDb \
+  -dbPath "$db_path" \
+  -port "$port"

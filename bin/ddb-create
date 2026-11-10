@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+# Create (or verify) the DynamoDB table for the current environment.
+#
+#   bin/ddb-create                    # dev, against AWS_ENDPOINT_URL if set
+#   RAILS_ENV=production bin/ddb-create --production
+#
+# Idempotent: re-running it on an existing table does nothing.
+require_relative "../config/environment"
+
+Bassinet::Dynamo::Bootstrap.ensure_table!(
+  table: Bassinet::Dynamo::Tables.current,
+  production: ARGV.include?("--production") && Rails.env.production?
+)
+
+puts "table ready: #{Bassinet::Dynamo::Tables.current}"
+puts "endpoint:    #{ENV['AWS_ENDPOINT_URL'] || 'aws regional'}"

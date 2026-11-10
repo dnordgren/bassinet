@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Download DynamoDB Local (the jar, not the Docker image).
+#
+# There is no Docker socket on the dev box and no reason to add one: this is a
+# single Java process and the test suite talks to it over HTTP like any client.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+dest="vendor/dynamodb-local"
+
+if [[ -f "$dest/DynamoDBLocal.jar" ]]; then
+  echo "DynamoDB Local already present at $dest"
+  exit 0
+fi
+
+mkdir -p "$dest"
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+echo "Downloading DynamoDB Local..."
+curl -fsSL -o "$tmp/ddbl.tar.gz" \
+  https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.tar.gz
+tar -xzf "$tmp/ddbl.tar.gz" -C "$dest"
+rm -f "$dest"/DynamoDBLocal.jar.old 2>/dev/null || true
+
+echo "Installed to $dest"

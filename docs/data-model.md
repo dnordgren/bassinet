@@ -112,13 +112,15 @@ created_at, updated_at, deleted_at, version
 
 GSI2 (household → children):
 GSI2PK = HOUSEHOLD#<household_id>#CHILD
-GSI2SK = CHILD#<child_id>#<archived_at or 0>
+GSI2SK = CHILD#<archived_flag>#<child_id>
+         archived_flag = "0" when live, padded epoch when archived
 ```
 
 An item gets exactly one GSI2 key pair, so the child list and the user→households
 lookup both live on GSI2 (disambiguated by `entity`); GSI1 is reserved for the
-event timeline. Sorting children by `<archived_at>#<child_id>` puts live children
-(`0`) first and archived ones at the end.
+event timeline. The archive flag leads the sort key (`0` for live, padded epoch
+when archived) so live children always sort before archived ones, regardless of
+their ids.
 
 Sorting by `archived_at` (0 for live) keeps archived children at the end, and
 lets us filter "live only" with a sort-key condition.
