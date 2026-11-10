@@ -1,10 +1,253 @@
-/*
- * This is a manifest file that'll be compiled into application.css.
- *
- * With Propshaft, assets are served efficiently without preprocessing steps. You can still include
- * application-wide styles in this file, but keep in mind that CSS precedence will follow the standard
- * cascading order, meaning styles declared later in the document or manifest will override earlier ones,
- * depending on specificity.
- *
- * Consider organizing styles into separate files for maintainability.
- */
+/* Bassinet — one stylesheet, no build step.
+   Mobile-first, thumb-reachable, warm and calm. Dark mode via prefers-color-scheme. */
+
+:root {
+  --bg: #fdf8f3;
+  --surface: #ffffff;
+  --text: #241b1f;
+  --text-muted: #6b5a61;
+  --accent: #7a2a45;
+  --accent-soft: #f5e6ea;
+  --border: #e8dcd8;
+  --alert-bg: #fdf0f0;
+  --alert-border: #d98b8b;
+  --ok-bg: #eef7f0;
+  --ok-border: #8fbf9c;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(36, 27, 31, 0.06), 0 8px 24px rgba(36, 27, 31, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #171214;
+    --surface: #221a1d;
+    --text: #f6eff1;
+    --text-muted: #b3a2a9;
+    --accent: #e08aa5;
+    --accent-soft: #3a2530;
+    --border: #362a2e;
+    --alert-bg: #3a2224;
+    --alert-border: #a66568;
+    --ok-bg: #1e2f24;
+    --ok-border: #4f8060;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  /* Safe areas: without these the home indicator eats the last row of tiles. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+h1, h2, h3 { line-height: 1.2; margin: 0 0 0.4em; letter-spacing: -0.01em; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.15rem; }
+
+p { margin: 0 0 0.8em; }
+p:last-child { margin-bottom: 0; }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  background: var(--accent-soft);
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+}
+
+.muted { color: var(--text-muted); }
+.small { font-size: 0.85rem; }
+
+.fine-print {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+/* --- auth screens ------------------------------------------------------ */
+
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.auth-card-success .success-mark {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: var(--ok-bg);
+  border: 1px solid var(--ok-border);
+  color: var(--ok-border);
+  font-size: 1.5rem;
+  line-height: 50px;
+}
+
+.tagline {
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.handoff-banner {
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+/* --- buttons ----------------------------------------------------------- */
+
+.button {
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.button:active { transform: scale(0.985); }
+.button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.button-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.button-secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+@media (prefers-color-scheme: dark) {
+  .button-primary { color: #171214; }
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px 4px;
+}
+
+/* --- flash ------------------------------------------------------------- */
+
+.flash {
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  text-align: left;
+  font-size: 0.92rem;
+}
+
+.flash-alert {
+  background: var(--alert-bg);
+  border: 1px solid var(--alert-border);
+}
+
+.flash-notice {
+  background: var(--ok-bg);
+  border: 1px solid var(--ok-border);
+}
+
+/* --- app shell --------------------------------------------------------- */
+
+.app-shell {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+}
+
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0 20px;
+}
+
+.app-header h1 { font-size: 1.35rem; margin-bottom: 2px; }
+.header-sub { color: var(--text-muted); font-size: 0.9rem; margin: 0; }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.day-panel,
+.empty-state {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.empty-state { text-align: center; }
+
+.app-footer {
+  padding-top: 24px;
+  text-align: center;
+}
+
+/* Motion is a nicety; never a requirement. */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

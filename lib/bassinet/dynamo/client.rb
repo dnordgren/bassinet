@@ -51,7 +51,7 @@ module Bassinet
 
       # `condition: nil` means unconditional. Pass an expression to make the
       # write safe against races — this is how events become idempotent.
-      def put(item, condition: nil, expression_values: nil)
+      def put(item, condition: nil, expression_values: nil, condition_names: nil)
         params = {
           table_name: table,
           item: Marshal.to_item(item)
@@ -59,6 +59,7 @@ module Bassinet
         if condition
           params[:condition_expression] = condition
           params[:expression_attribute_values] = expression_values if expression_values
+          params[:expression_attribute_names] = condition_names if condition_names
         end
         @client.put_item(params)
         item
@@ -87,7 +88,8 @@ module Bassinet
         raise translate(e)
       end
 
-      def update(pk:, sk:, updates:, condition: nil, expression_values: nil)
+      def update(pk:, sk:, updates:, condition: nil, expression_values: nil,
+                 condition_names: nil, require_existing: false)
         names = {}
         values = (expression_values || {}).dup
         sets = []
@@ -109,8 +111,17 @@ module Bassinet
           expression_attribute_values: values,
           return_values: "ALL_NEW"
         }
-        if condition
-          params[:condition_expression] = condition
+
+        # update_item creates the item if it is missing, which turns a typo'd
+        # key into a phantom record. Callers that mean "modify what's there"
+        # get that guarantee explicitly.
+        conditions = []
+        conditions << "attribute_exists(PK)" if require_existing
+        conditions << condition if condition
+
+        if conditions.any?
+          params[:condition_expression] = conditions.join(" AND ")
+          params[:expression_attribute_names] = names.merge(condition_names || {})
         end
 
         response = @client.update_item(params)

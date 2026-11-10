@@ -1,0 +1,39 @@
+<% content_for :title, "Sign in" %>
+
+<main class="auth-screen">
+  <div class="auth-card">
+    <h1>Bassinet</h1>
+    <p class="tagline">Log the baby. Not your memory.</p>
+
+    <% if @pending_handoff.present? %>
+      <div class="handoff-banner">
+        <p><strong>Finishing sign-in from the app.</strong></p>
+        <p class="muted">Complete your Google sign-in below, then return to the app.</p>
+      </div>
+    <% end %>
+
+    <% if flash[:alert].present? %>
+      <p class="flash flash-alert"><%= flash[:alert] %></p>
+    <% end %>
+    <% if flash[:notice].present? %>
+      <p class="flash flash-notice"><%= flash[:notice] %></p>
+    <% end %>
+
+    <% if @google_configured %>
+      <%= link_to "Continue with Google", auth_start_path, class: "button button-primary", data: { turbo: false } %>
+    <% else %>
+      <div class="flash flash-alert">
+        <p><strong>Google sign-in is not configured.</strong></p>
+        <p class="muted">
+          Add <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code>
+          to the environment. See <code>docs/setup-google-oauth.md</code>.
+        </p>
+      </div>
+    <% end %>
+
+    <p class="fine-print">
+      Sign in first, then add this page to your Home Screen. That ordering matters
+      on iOS — an installed app gets its own cookie jar seeded at install time.
+    </p>
+  </div>
+</main>

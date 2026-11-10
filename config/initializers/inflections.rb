@@ -14,3 +14,9 @@
 # ActiveSupport::Inflector.inflections(:en) do |inflect|
 #   inflect.acronym "RESTful"
 # end
+
+# Zeitwerk derives constant names from filenames. Without this, google_oauth.rb
+# resolves to Bassinet::GoogleOauth, not Bassinet::GoogleOAuth.
+ActiveSupport::Inflector.inflections(:en) do |inflect|
+  inflect.acronym "OAuth"
+end

@@ -1,0 +1,49 @@
+<% content_for :title, "Bassinet" %>
+
+<main class="app-shell">
+  <header class="app-header">
+    <div class="header-main">
+      <h1>Bassinet</h1>
+      <% if @selected_child %>
+        <p class="header-sub">
+          <%= @selected_child.name %>
+          <% if (age = @selected_child.age_days) && age >= 0 %>
+            · <%= pluralize(age, "day") %> old
+          <% end %>
+        </p>
+      <% end %>
+    </div>
+    <div class="header-actions">
+      <span class="user-chip" title="<%= current_user.email %>">
+        <%= current_user.initials %>
+      </span>
+      <%= button_to "Sign out", sign_out_path, method: :delete, class: "link-button" %>
+    </div>
+  </header>
+
+  <% if @children.empty? %>
+    <section class="empty-state">
+      <h2>Add your first child</h2>
+      <p class="muted">
+        You're signed in as <%= current_user.display_name %>. Bassinet needs a
+        child profile before it can track anything.
+      </p>
+      <p class="muted small">
+        Child creation lands in phase 2. The data layer and sign-in are live.
+      </p>
+    </section>
+  <% else %>
+    <section class="day-panel">
+      <h2>Today</h2>
+      <p class="muted">
+        Events, timers and the day timeline land in phase 2.
+      </p>
+    </section>
+  <% end %>
+
+  <footer class="app-footer">
+    <p class="fine-print">
+      Household <code><%= current_household_id %></code>
+    </p>
+  </footer>
+</main>

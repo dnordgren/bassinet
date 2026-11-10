@@ -1,0 +1,15 @@
+<% content_for :title, "Signed in" %>
+
+<main class="auth-screen">
+  <div class="auth-card auth-card-success">
+    <div class="success-mark">✓</div>
+    <h1>You're signed in</h1>
+    <p class="tagline">Go back to the Bassinet app — it will pick up automatically.</p>
+
+    <p class="fine-print">
+      This page is only here to finish the handoff. You can close it.
+    </p>
+
+    <%= link_to "Open Bassinet", root_path, class: "button button-secondary" %>
+  </div>
+</main>

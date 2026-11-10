@@ -1,14 +1,23 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
+  # Health check for load balancers and uptime monitors.
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  # --- auth ---------------------------------------------------------------
+  get  "sign-in",  to: "auth/sessions#new",  as: :sign_in
+  delete "sign-out", to: "auth/sessions#destroy", as: :sign_out
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  namespace :auth do
+    get "start", to: "oauth#start", as: :start
+    get "google/callback", to: "oauth#callback", as: :callback
+
+    # iOS standalone handoff (docs/auth.md §2)
+    post "handoff", to: "handoff#create", as: :handoff_create
+    get  "handoff/poll/:id", to: "handoff#poll", as: :handoff_poll, constraints: { id: /[^\/]+/ }
+    post "handoff/session", to: "handoff#session_create", as: :handoff_session
+    get  "handoff/finished", to: "handoff#finished", as: :handoff_finished
+    # Keep this last: it would otherwise shadow the literal routes above.
+    get  "handoff/:code", to: "handoff#entry", as: :handoff_entry
+  end
+
+  root "home#index"
 end
