@@ -5,8 +5,10 @@ DynamoDB on the back, sockets for live co-parenting.
 
 Named for the thing the baby is in, since it tracks the thing the baby does in it.
 
-> **Status: spec only.** The root commit of this repo is the initial design
-> document. No application code exists yet.
+> **Status: phase 2 — logging works.** You can add a child and log diapers,
+> feeds, sleep, pumping, growth and notes, then edit, delete and undo them.
+> Offline queue, live sync and PWA polish are phases 4–6; the data layer they
+> will use already exists.
 
 ## Docs
 
@@ -52,7 +54,7 @@ bin/ddb-download      # fetch DynamoDB Local (jar, ~49MB, gitignored)
 bin/ddb-start         # leave running in its own terminal
 bin/ddb-create        # create the table + 2 GSIs
 bin/rails server      # http://localhost:3000
-bundle exec rspec     # 129 examples, boots its own DB on a random port
+bundle exec rspec     # 152 examples, boots its own DB on a random port
 ```
 
 Sign-in needs a Google OAuth client — see `docs/setup-google-oauth.md`. Without
@@ -72,3 +74,23 @@ see `docs/SPEC.md` §9.1.
 | 2026-11-09 | AWS: existing account, `us-east-1` |
 | 2026-11-09 | Google-only auth in v1; magic link deferred |
 | 2026-11-09 | Phase 1 done: data layer + auth, 129 specs |
+| 2026-11-25 | Phase 2 done: child creation and event logging, 152 specs |
+
+## What works today
+
+- **Sign in with Google** — including the iOS handoff for an installed PWA.
+- **Add a child** — name, birth date, timezone, units. Up to 10 per household.
+- **Log events** — one-tap tiles for diaper, bottle and nursing; detail forms for
+  feed, sleep, pump, growth and note.
+- **Timers** — sleep and nursing start a clock; a banner shows it running with a
+  Stop button, and stopping records the duration.
+- **Day view** — per-day timeline with type filters and previous/next navigation.
+- **Edit, delete, undo** — soft deletes with a five-second undo toast; the
+  tombstone is cleared rather than the row recreated.
+
+Everything is scoped to the household at the repository layer, and every write
+is validated against a per-type schema (`Bassinet::EventPayload`) before it
+reaches DynamoDB.
+
+Not built yet: invites and caregiver roles (phase 3), live co-parenting updates
+(phase 4), the offline outbox (phase 5), and PWA install polish (phase 6).

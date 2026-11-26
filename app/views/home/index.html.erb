@@ -21,6 +21,20 @@
     </div>
   </header>
 
+  <% if flash[:alert].present? %>
+    <p class="flash flash-alert"><%= flash[:alert] %></p>
+  <% end %>
+  <% if flash[:notice].present? %>
+    <p class="flash flash-notice"><%= flash[:notice] %></p>
+  <% end %>
+
+  <% if (undo = flash[:undo_event]).present? %>
+    <div class="undo-toast" data-controller="undo" data-undo-seconds-value="5">
+      <span>Deleted <%= undo[:label].to_s.downcase %>.</span>
+      <%= button_to "Undo", undo[:restore_path], method: :post, class: "undo-button" %>
+    </div>
+  <% end %>
+
   <% if @children.empty? %>
     <section class="empty-state">
       <h2>Add your first child</h2>
@@ -28,16 +42,73 @@
         You're signed in as <%= current_user.display_name %>. Bassinet needs a
         child profile before it can track anything.
       </p>
-      <p class="muted small">
-        Child creation lands in phase 2. The data layer and sign-in are live.
-      </p>
+      <%= link_to "Add a child", new_child_path, class: "button button-primary" %>
     </section>
   <% else %>
+    <% if @running %>
+      <section class="running-banner">
+        <span class="running-dot" aria-hidden="true"></span>
+        <span class="running-text">
+          <strong><%= event_label(@running) %></strong> since
+          <%= clock_time(@running.started_at, @selected_child.timezone) %>
+          · <%= format_duration(elapsed_seconds(@running)) %>
+        </span>
+        <%= button_to "Stop", child_event_path(@selected_child.child_id, @running.occurred_at, @running.event_id),
+                      method: :patch, params: { stop: 1, type: @running.type },
+                      class: "running-stop" %>
+      </section>
+    <% end %>
+
+    <section class="chips">
+      <% %w[feed diaper sleep pump].each do |type| %>
+        <% last = @last_by_type[type] %>
+        <div class="chip">
+          <span class="chip-icon" aria-hidden="true"><%= type_icon(type) %></span>
+          <span class="chip-body">
+            <span class="chip-type"><%= type.capitalize %></span>
+            <span class="chip-time">
+              <%= last ? time_ago(last.occurred_at, now: @today) : "—" %>
+            </span>
+          </span>
+        </div>
+      <% end %>
+    </section>
+
+    <section class="action-grid">
+      <%= button_to "Diaper", child_events_path(@selected_child.child_id),
+                    method: :post, params: { type: "diaper", quick: 1, payload: { kind: "wet" } },
+                    class: "tile tile-diaper" %>
+      <%= button_to "Bottle", child_events_path(@selected_child.child_id),
+                    method: :post, params: { type: "feed", quick: 1, payload: { method: "bottle" } },
+                    class: "tile tile-feed" %>
+      <%= button_to "Nursing", child_events_path(@selected_child.child_id),
+                    method: :post, params: { type: "feed", quick: 1, payload: { method: "nursing" } },
+                    class: "tile tile-nursing" %>
+      <%= button_to "Sleep", child_events_path(@selected_child.child_id),
+                    method: :post, params: { type: "sleep", quick: 1 },
+                    class: "tile tile-sleep" %>
+      <%= button_to "Pump", child_events_path(@selected_child.child_id),
+                    method: :post, params: { type: "pump", quick: 1 },
+                    class: "tile tile-pump" %>
+      <%= link_to "More", new_child_event_path(@selected_child.child_id, type: "note"),
+                  class: "tile tile-more" %>
+    </section>
+
     <section class="day-panel">
-      <h2>Today</h2>
-      <p class="muted">
-        Events, timers and the day timeline land in phase 2.
-      </p>
+      <div class="day-head">
+        <h2>Today</h2>
+        <%= link_to "Full day →", child_day_path(@selected_child.child_id, Time.current.in_time_zone(ActiveSupport::TimeZone[@selected_child.timezone] || Time.zone).to_date) %>
+      </div>
+
+      <% if @today_events.empty? %>
+        <p class="muted">Nothing logged yet today. Tap a tile above.</p>
+      <% else %>
+        <ol class="event-list">
+          <% @today_events.first(12).each do |event| %>
+            <%= render "events/event", event: event, child: @selected_child %>
+          <% end %>
+        </ol>
+      <% end %>
     </section>
   <% end %>
 

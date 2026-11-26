@@ -19,5 +19,28 @@ Rails.application.routes.draw do
     get  "handoff/:code", to: "handoff#entry", as: :handoff_entry
   end
 
+  # --- children -----------------------------------------------------------
+  resources :children, only: %i[new create]
+
+  # --- events, scoped under a child ---------------------------------------
+  # The event sort key is (occurred_at, event_id), so a member URL has to carry
+  # both: `occurred_at` is part of the identity, not a display detail.
+  scope "c/:child_id" do
+    get "day/:date", to: "days#show", as: :child_day,
+                     constraints: { date: /\d{4}-\d{2}-\d{2}/ }
+
+    get  "events/new", to: "events#new", as: :new_child_event
+    post "events", to: "events#create", as: :child_events
+
+    get    "events/:occurred_at/:event_id/edit", to: "events#edit", as: :edit_child_event
+    patch  "events/:occurred_at/:event_id", to: "events#update", as: :child_event
+    delete "events/:occurred_at/:event_id", to: "events#destroy", as: :delete_child_event
+
+    # Undo a delete. Clears the tombstone rather than recreating the row, so the
+    # sort key and identity survive intact.
+    post "events/:occurred_at/:event_id/restore", to: "events#restore",
+                                                  as: :restore_child_event
+  end
+
   root "home#index"
 end

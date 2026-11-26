@@ -170,6 +170,27 @@ module Bassinet
       ))
     end
 
+    # Undo of a delete. Clears the tombstone instead of recreating the row, so
+    # the event keeps its identity and its place in the timeline. Guarded on the
+    # tombstone still being there, so two racing undo taps can't both win.
+    def restore(child_id, event_id, occurred_at:)
+      assert_child_in_scope!(child_id)
+
+      current = client.get(pk: Dynamo::Keys.child_pk(child_id),
+                            sk: Dynamo::Keys.event_sk(occurred_at, event_id),
+                            consistent: true)
+      raise Dynamo::Client::NotFound, "event #{event_id} not found" if current.nil?
+
+      ts = now_ms
+      hydrate(client.update(
+        pk: Dynamo::Keys.child_pk(child_id),
+        sk: Dynamo::Keys.event_sk(occurred_at, event_id),
+        updates: { "deleted_at" => nil, "updated_at" => ts,
+                   "version" => current["version"].to_i + 1 },
+        condition: "attribute_exists(deleted_at)"
+      ))
+    end
+
     private
 
     def after_cursor?(event, cursor)
