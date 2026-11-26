@@ -1,0 +1,53 @@
+<% content_for :title, "Add a child" %>
+
+<main class="app-shell">
+  <header class="app-header">
+    <div class="header-main">
+      <h1>Add a child</h1>
+      <p class="header-sub">Just the basics — you can change any of it later.</p>
+    </div>
+    <div class="header-actions">
+      <%= link_to "Cancel", root_path, class: "link-button" %>
+    </div>
+  </header>
+
+  <% if @error.present? %>
+    <p class="flash flash-alert"><%= @error %></p>
+  <% end %>
+
+  <%= form_with url: children_path, method: :post, class: "event-form" do %>
+    <label class="field">
+      <span class="field-label">Name</span>
+      <%= text_field_tag "child[name]", params.dig(:child, :name), class: "field-input",
+                         required: true, maxlength: 60, autocomplete: "off" %>
+    </label>
+
+    <label class="field">
+      <span class="field-label">Birth date</span>
+      <%= date_field_tag "child[birth_date]", params.dig(:child, :birth_date), class: "field-input" %>
+    </label>
+
+    <label class="field">
+      <span class="field-label">Timezone</span>
+      <%= select_tag "child[timezone]",
+                     options_for_select(@timezones, params.dig(:child, :timezone) || "America/Chicago"),
+                     class: "field-input" %>
+    </label>
+
+    <fieldset class="field">
+      <legend class="field-label">Units</legend>
+      <div class="segmented">
+        <% %w[metric imperial].each do |unit| %>
+          <label class="segment">
+            <%= radio_button_tag "child[units]", unit, (params.dig(:child, :units) || "metric") == unit %>
+            <span><%= unit.capitalize %></span>
+          </label>
+        <% end %>
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <%= submit_tag "Add child", class: "button button-primary" %>
+    </div>
+  <% end %>
+</main>

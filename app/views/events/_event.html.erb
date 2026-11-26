@@ -1,0 +1,19 @@
+<li class="event-row" id="<%= dom_id_for_event(event) %>">
+  <span class="event-icon" aria-hidden="true"><%= event_icon(event) %></span>
+  <span class="event-body">
+    <span class="event-label"><%= event_label(event) %></span>
+    <% if (detail = event_detail(event)).present? %>
+      <span class="event-detail"><%= detail %></span>
+    <% end %>
+  </span>
+  <span class="event-when">
+    <%= clock_time(event.occurred_at, child.timezone) %>
+  </span>
+  <span class="event-actions">
+    <%= link_to "Edit", edit_child_event_path(child.child_id, event.occurred_at, event.event_id),
+                class: "event-action" %>
+    <%= button_to "Delete", delete_child_event_path(child.child_id, event.occurred_at, event.event_id),
+                  method: :delete, class: "event-action event-delete",
+                  form: { data: { turbo_confirm: "Delete this entry?" } } %>
+  </span>
+</li>

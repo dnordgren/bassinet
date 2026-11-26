@@ -1,0 +1,136 @@
+<% payload = record&.payload || {} %>
+<% field_value = ->(key, default = nil) { payload[key].presence || default } %>
+
+<%# `occurred_at` is part of the row's identity (it is half the sort key), so
+    it is editable only on create. Changing it on an existing entry would mean
+    writing a new row, which is a different operation. %>
+<% if record %>
+  <div class="field">
+    <span class="field-label">When</span>
+    <p class="field-static">
+      <%= Time.at(record.occurred_at / 1000.0).in_time_zone(zone_for_child)
+              .strftime("%B %-d, %Y at %-I:%M %p") %>
+    </p>
+  </div>
+<% else %>
+  <label class="field">
+    <span class="field-label">When</span>
+    <%= datetime_local_field_tag "occurred_at",
+          params[:occurred_at].presence || Time.current.in_time_zone(zone_for_child).strftime("%Y-%m-%dT%H:%M"),
+          class: "field-input" %>
+  </label>
+<% end %>
+
+<% case type %>
+<% when "diaper" %>
+  <fieldset class="field">
+    <legend class="field-label">Kind</legend>
+    <div class="segmented">
+      <% %w[wet dirty mixed dry].each do |kind| %>
+        <label class="segment">
+          <%= radio_button_tag "payload[kind]", kind, field_value.call("kind", "wet") == kind %>
+          <span><%= kind.capitalize %></span>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+  <label class="field">
+    <span class="field-label">Notes</span>
+    <%= text_field_tag "payload[notes]", field_value.call("notes"), class: "field-input" %>
+  </label>
+
+<% when "feed" %>
+  <fieldset class="field">
+    <legend class="field-label">Method</legend>
+    <div class="segmented">
+      <% %w[bottle nursing solids tube].each do |method| %>
+        <label class="segment">
+          <%= radio_button_tag "payload[method]", method, field_value.call("method", "bottle") == method %>
+          <span><%= method.capitalize %></span>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+  <label class="field">
+    <span class="field-label">Amount (ml)</span>
+    <%= number_field_tag "payload[amount_ml]", field_value.call("amount_ml"), class: "field-input", min: 1, max: 2000, inputmode: "numeric" %>
+  </label>
+  <fieldset class="field">
+    <legend class="field-label">Side</legend>
+    <div class="segmented">
+      <% %w[left right both].each do |side| %>
+        <label class="segment">
+          <%= radio_button_tag "payload[side]", side, field_value.call("side") == side %>
+          <span><%= side.capitalize %></span>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+  <label class="field">
+    <span class="field-label">Foods (comma separated)</span>
+    <%= text_field_tag "payload[foods][]", Array(field_value.call("foods")).join(", "), class: "field-input" %>
+  </label>
+  <label class="field">
+    <span class="field-label">Notes</span>
+    <%= text_field_tag "payload[notes]", field_value.call("notes"), class: "field-input" %>
+  </label>
+
+<% when "sleep" %>
+  <fieldset class="field">
+    <legend class="field-label">Quality</legend>
+    <div class="segmented">
+      <% %w[good fair poor].each do |quality| %>
+        <label class="segment">
+          <%= radio_button_tag "payload[quality]", quality, field_value.call("quality") == quality %>
+          <span><%= quality.capitalize %></span>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+  <label class="field">
+    <span class="field-label">Location</span>
+    <%= text_field_tag "payload[location]", field_value.call("location"), class: "field-input" %>
+  </label>
+  <label class="field">
+    <span class="field-label">Notes</span>
+    <%= text_field_tag "payload[notes]", field_value.call("notes"), class: "field-input" %>
+  </label>
+
+<% when "pump" %>
+  <label class="field">
+    <span class="field-label">Left (ml)</span>
+    <%= number_field_tag "payload[amount_ml_left]", field_value.call("amount_ml_left"), class: "field-input", min: 0, max: 2000, inputmode: "numeric" %>
+  </label>
+  <label class="field">
+    <span class="field-label">Right (ml)</span>
+    <%= number_field_tag "payload[amount_ml_right]", field_value.call("amount_ml_right"), class: "field-input", min: 0, max: 2000, inputmode: "numeric" %>
+  </label>
+  <label class="field">
+    <span class="field-label">Notes</span>
+    <%= text_field_tag "payload[notes]", field_value.call("notes"), class: "field-input" %>
+  </label>
+
+<% when "growth" %>
+  <label class="field">
+    <span class="field-label">Weight (g)</span>
+    <%= number_field_tag "payload[weight_g]", field_value.call("weight_g"), class: "field-input", min: 1, max: 40000, inputmode: "numeric" %>
+  </label>
+  <label class="field">
+    <span class="field-label">Height (mm)</span>
+    <%= number_field_tag "payload[height_mm]", field_value.call("height_mm"), class: "field-input", min: 1, max: 1500, inputmode: "numeric" %>
+  </label>
+  <label class="field">
+    <span class="field-label">Head circumference (mm)</span>
+    <%= number_field_tag "payload[head_circumference_mm]", field_value.call("head_circumference_mm"), class: "field-input", min: 1, max: 800, inputmode: "numeric" %>
+  </label>
+
+<% when "note" %>
+  <label class="field">
+    <span class="field-label">Note</span>
+    <%= text_area_tag "payload[body]", field_value.call("body"), class: "field-input field-textarea", rows: 4, maxlength: 2000 %>
+  </label>
+<% end %>
+
+<% unless %w[diaper feed sleep pump note].include?(type) %>
+  <p class="muted small">No extra fields for this type.</p>
+<% end %>

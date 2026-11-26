@@ -1,0 +1,83 @@
+<% content_for :title, "#{@child.name} — #{@date.strftime('%B %-d')}" %>
+
+<main class="app-shell">
+  <header class="app-header">
+    <div class="header-main">
+      <h1><%= @date == zone_for(@child).today ? "Today" : @date.strftime("%A") %></h1>
+      <p class="header-sub">
+        <%= @child.name %> · <%= @date.strftime("%B %-d, %Y") %>
+      </p>
+    </div>
+    <div class="header-actions">
+      <%= link_to "← Back", root_path, class: "link-button" %>
+    </div>
+  </header>
+
+  <% if flash[:alert].present? %>
+    <p class="flash flash-alert"><%= flash[:alert] %></p>
+  <% end %>
+  <% if flash[:notice].present? %>
+    <p class="flash flash-notice"><%= flash[:notice] %></p>
+  <% end %>
+
+  <% if (undo = flash[:undo_event]).present? %>
+    <div class="undo-toast" data-controller="undo" data-undo-seconds-value="5">
+      <span>Deleted <%= undo[:label].to_s.downcase %>.</span>
+      <%= button_to "Undo", undo[:restore_path], method: :post, class: "undo-button" %>
+    </div>
+  <% end %>
+
+  <nav class="day-nav">
+    <% prev_date = @date - 1 %>
+    <% next_date = @date + 1 %>
+    <%= link_to "‹ #{prev_date.strftime('%-d %b')}", child_day_path(@child.child_id, prev_date), class: "day-nav-link" %>
+    <%= link_to "Today", child_day_path(@child.child_id, zone_for(@child).today), class: "day-nav-link day-nav-today" %>
+    <% if next_date <= zone_for(@child).today %>
+      <%= link_to "#{next_date.strftime('%-d %b')} ›", child_day_path(@child.child_id, next_date), class: "day-nav-link" %>
+    <% else %>
+      <span class="day-nav-link is-disabled"><%= next_date.strftime('%-d %b') %> ›</span>
+    <% end %>
+  </nav>
+
+  <nav class="filter-bar">
+    <% if @type_filter.blank? %>
+      <span class="filter-pill is-active">All</span>
+    <% else %>
+      <%= link_to "All", child_day_path(@child.child_id, @date), class: "filter-pill" %>
+    <% end %>
+    <% Bassinet::Event::TYPES.each do |type| %>
+      <% label = plural_type_label(type) %>
+      <%= link_to label, child_day_path(@child.child_id, @date, type: type),
+                  class: "filter-pill #{"is-active" if @type_filter == type}" %>
+    <% end %>
+  </nav>
+
+  <section class="day-panel">
+    <% if @events.empty? %>
+      <p class="muted">
+        <% if @type_filter %>
+          No <%= plural_type_label(@type_filter).downcase %> logged this day.
+        <% else %>
+          Nothing logged this day.
+        <% end %>
+      </p>
+    <% else %>
+      <ol class="event-list">
+        <% @events.each do |event| %>
+          <%= render "events/event", event: event, child: @child %>
+        <% end %>
+      </ol>
+    <% end %>
+  </section>
+
+  <section class="action-grid">
+    <%= button_to "Diaper", child_events_path(@child.child_id),
+                  method: :post, params: { type: "diaper", quick: 1, payload: { kind: "wet" } },
+                  class: "tile tile-diaper" %>
+    <%= button_to "Bottle", child_events_path(@child.child_id),
+                  method: :post, params: { type: "feed", quick: 1, payload: { method: "bottle" } },
+                  class: "tile tile-feed" %>
+    <%= link_to "More", new_child_event_path(@child.child_id, type: "note"),
+                class: "tile tile-more" %>
+  </section>
+</main>

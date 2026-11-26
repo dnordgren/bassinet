@@ -437,10 +437,32 @@ Bugs found by actually running the thing:
 | `update_item` invents a row when the key is missing | `require_existing:` |
 | Zeitwerk wanted `GoogleOauth` | `acronym "OAuth"` |
 
-### Phase 2 — core logging (1–2 sessions)
-- Home screen action grid, event create/edit/delete via Turbo Frames
-- Day view, last-event chips, undo toast
-- Server-side validation + idempotency
+### Phase 2 — core logging ✅ (done 2026-11-25)
+
+Shipped:
+
+- Child creation — form, timezone picker, units, 10-per-household cap enforced
+  by `ChildRepo`.
+- Home screen: one-tap tiles (Diaper → wet, Bottle, Nursing, Sleep, Pump, More),
+  last-event chips per type, today's feed, running-timer banner with Stop.
+- `EventsController` — create, edit, delete, restore. Payload validation happens
+  in `Bassinet::EventPayload` (dry-schema) before any write.
+- `DaysController` — per-day timeline, type filters, previous/next navigation.
+- Timers: sleep and nursing get `started_at` on create; Stop stamps `ended_at`
+  and `duration_s`. A stop request carries no payload, so updates merge over the
+  stored payload instead of replacing it.
+- Delete is a tombstone plus a five-second undo toast; undo clears `deleted_at`
+  rather than recreating the row, so identity and timeline position survive.
+- Event ids are client-generated UUIDv7 (already the offline contract), so the
+  outbox in phase 5 can replay without a new id scheme.
+- 152 specs, all green, against DynamoDB Local.
+
+Bug found by running it: the Stop button posts only `stop=1`, and validating that
+empty hash 422'd on the required `method` field — a nursing timer could never be
+stopped. Updates now merge over the stored payload.
+
+Not built (deliberately): the "More" tile routes to the note form rather than a
+chooser; invites and live updates are phases 3 and 4.
 
 ### Phase 3 — household (1 session)
 - Invites, roles, members screen, `saved`-only access checks

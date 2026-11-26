@@ -1,0 +1,38 @@
+<% content_for :title, "#{@event ? 'Edit' : 'Log'} #{@type.titleize}" %>
+
+<main class="app-shell">
+  <header class="app-header">
+    <div class="header-main">
+      <h1><%= @event ? "Edit" : "Log" %> <%= @type.titleize %></h1>
+      <p class="header-sub"><%= @child.name %></p>
+    </div>
+    <div class="header-actions">
+      <%= link_to "Cancel", @event ? child_day_path(@child.child_id, day_string(@event.occurred_at)) : root_path,
+                  class: "link-button" %>
+    </div>
+  </header>
+
+  <% if @error.present? %>
+    <p class="flash flash-alert"><%= @error %></p>
+  <% end %>
+
+  <% if @event %>
+    <%= form_with url: child_event_path(@child.child_id, @event.occurred_at, @event.event_id), method: :patch, class: "event-form" do %>
+      <%= render "events/fields", type: @type, record: @event %>
+      <div class="form-actions">
+        <%= submit_tag "Save changes", class: "button button-primary" %>
+      </div>
+    <% end %>
+  <% else %>
+    <%= form_with url: child_events_path(@child.child_id), method: :post, class: "event-form" do %>
+      <%= hidden_field_tag :type, @type %>
+      <% if @occurred_at.present? %>
+        <%= hidden_field_tag :occurred_at, @occurred_at %>
+      <% end %>
+      <%= render "events/fields", type: @type, record: nil %>
+      <div class="form-actions">
+        <%= submit_tag "Log #{@type.titleize.downcase}", class: "button button-primary" %>
+      </div>
+    <% end %>
+  <% end %>
+</main>
